@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pricekart_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpwd
+      MYSQL_DATABASE: pricekart
+      MYSQL_USER: pricekart
+      MYSQL_PASSWORD: pricekartpwd
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: pricekart_backend
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/pricekart
+      SPRING_DATASOURCE_USERNAME: pricekart
+      SPRING_DATASOURCE_PASSWORD: pricekartpwd
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
+  frontend:
+    build: ./frontend
+    container_name: pricekart_frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8080/api
+
+volumes:
+  mysql_data:
